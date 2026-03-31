@@ -2,8 +2,10 @@ package launches
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -21,7 +23,8 @@ type Cache struct {
 }
 
 // NewCache creates a cache that stores data in ~/.cache/stellar-status/.
-func NewCache() (*Cache, error) {
+// The cache file is named per site to avoid cross-site staleness.
+func NewCache(siteAbbrev string) (*Cache, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
@@ -30,7 +33,8 @@ func NewCache() (*Cache, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, err
 	}
-	return &Cache{path: filepath.Join(dir, "launches.json")}, nil
+	filename := fmt.Sprintf("launches-%s.json", strings.ToLower(siteAbbrev))
+	return &Cache{path: filepath.Join(dir, filename)}, nil
 }
 
 // NewCacheWithPath creates a cache at a specific path (useful for testing).

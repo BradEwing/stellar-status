@@ -59,6 +59,25 @@ func ForTime(t time.Time) Phase {
 	}
 }
 
+var asciiPhases = map[PhaseName][3]string{
+	NewMoon:        {" . . ", ".   .", " ' ' "},
+	WaxingCrescent: {" .*  ", ".(*  ", " '*  "},
+	FirstQuarter:   {" .** ", ".(** ", " '** "},
+	WaxingGibbous:  {" .***", ".(***", " '***"},
+	FullMoon:       {" *** ", "*****", " *** "},
+	WaningGibbous:  {"***. ", "***) ", "***' "},
+	ThirdQuarter:   {" **. ", " **) ", " **' "},
+	WaningCrescent: {"  *. ", "  *) ", "  *' "},
+}
+
+// ASCII returns a 3-line minimal-dots ASCII representation of the moon phase.
+func (p Phase) ASCII() [3]string {
+	if art, ok := asciiPhases[p.Name]; ok {
+		return art
+	}
+	return asciiPhases[NewMoon]
+}
+
 func phaseNameAndEmoji(dayOfCycle float64) (PhaseName, string) {
 	// Divide the synodic month into 8 equal segments.
 	segment := synodicMonth / 8.0

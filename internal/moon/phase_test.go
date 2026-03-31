@@ -89,6 +89,29 @@ func TestIlluminationSymmetry(t *testing.T) {
 	}
 }
 
+func TestASCII_AllPhasesHaveArt(t *testing.T) {
+	phases := []PhaseName{
+		NewMoon, WaxingCrescent, FirstQuarter, WaxingGibbous,
+		FullMoon, WaningGibbous, ThirdQuarter, WaningCrescent,
+	}
+	for _, name := range phases {
+		p := Phase{Name: name}
+		art := p.ASCII()
+		for i, line := range art {
+			assert.NotEmpty(t, line, "phase %s line %d should not be empty", name, i)
+		}
+	}
+}
+
+func TestASCII_CurrentPhase(t *testing.T) {
+	p := Current()
+	art := p.ASCII()
+	assert.Len(t, art, 3)
+	for _, line := range art {
+		assert.NotEmpty(t, line)
+	}
+}
+
 func TestDayOfCycle_Monotonic(t *testing.T) {
 	prev := -1.0
 	for h := range 710 { // ~29.5 days in hours

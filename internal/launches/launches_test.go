@@ -43,7 +43,7 @@ func TestClient_FetchUpcoming(t *testing.T) {
 	})
 	defer server.Close()
 
-	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	client := &Client{httpClient: server.Client(), baseURL: server.URL, locationID: 11}
 	launches, err := client.FetchUpcoming(context.Background())
 
 	require.NoError(t, err)
@@ -56,7 +56,7 @@ func TestClient_FetchUpcoming_EmptyResponse(t *testing.T) {
 	server := fixtureResponse(t, []apiLaunchEntry{})
 	defer server.Close()
 
-	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	client := &Client{httpClient: server.Client(), baseURL: server.URL, locationID: 11}
 	launches, err := client.FetchUpcoming(context.Background())
 
 	require.NoError(t, err)
@@ -69,7 +69,7 @@ func TestClient_FetchUpcoming_BadStatus(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	client := &Client{httpClient: server.Client(), baseURL: server.URL, locationID: 11}
 	_, err := client.FetchUpcoming(context.Background())
 
 	assert.Error(t, err)
@@ -83,7 +83,7 @@ func TestClient_FetchUpcoming_InvalidJSON(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	client := &Client{httpClient: server.Client(), baseURL: server.URL, locationID: 11}
 	_, err := client.FetchUpcoming(context.Background())
 
 	assert.Error(t, err)
@@ -98,7 +98,7 @@ func TestClient_FetchUpcoming_SkipsInvalidDates(t *testing.T) {
 	})
 	defer server.Close()
 
-	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	client := &Client{httpClient: server.Client(), baseURL: server.URL, locationID: 11}
 	launches, err := client.FetchUpcoming(context.Background())
 
 	require.NoError(t, err)
@@ -115,7 +115,7 @@ func TestClient_FetchUpcoming_CancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	client := &Client{httpClient: server.Client(), baseURL: server.URL, locationID: 11}
 	_, err := client.FetchUpcoming(ctx)
 
 	assert.Error(t, err)
@@ -128,7 +128,7 @@ func TestClient_FetchUpcoming_RequestParams(t *testing.T) {
 
 		q := r.URL.Query()
 		assert.Equal(t, "json", q.Get("format"))
-		assert.Equal(t, "11", q.Get("location__ids"))
+		assert.Equal(t, "27", q.Get("location__ids"))
 		assert.Equal(t, "5", q.Get("limit"))
 		assert.Equal(t, "list", q.Get("mode"))
 		assert.Contains(t, r.URL.Path, "/launch/upcoming/")
@@ -138,14 +138,15 @@ func TestClient_FetchUpcoming_RequestParams(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	client := &Client{httpClient: server.Client(), baseURL: server.URL, locationID: 27}
 	_, err := client.FetchUpcoming(context.Background())
 	require.NoError(t, err)
 }
 
 func TestNewClient(t *testing.T) {
-	client := NewClient()
+	client := NewClient(11)
 	assert.Equal(t, baseURL, client.baseURL)
+	assert.Equal(t, 11, client.locationID)
 	assert.Equal(t, requestTimeout, client.httpClient.Timeout)
 }
 
@@ -189,15 +190,16 @@ func TestTracker_NextLaunch(t *testing.T) {
 	})
 	defer server.Close()
 
-	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	client := &Client{httpClient: server.Client(), baseURL: server.URL, locationID: 11}
 	cache := testCache(t)
-	tracker := NewTrackerWithDeps(client, cache)
+	tracker := NewTrackerWithDeps(client, cache, "VBG")
 
 	result, err := tracker.NextLaunch(context.Background())
 
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Equal(t, "Falcon 9 Block 5 | Starlink Group 17-17", result.Launch.Name)
+	assert.Equal(t, "VBG", result.SiteAbbrev)
 	assert.Contains(t, result.Countdown, "d")
 }
 
@@ -207,14 +209,31 @@ func TestTracker_NextLaunch_UsesCache(t *testing.T) {
 	cache.Set([]Launch{{ID: "cached", Name: "Cached Launch", NET: future, Status: Status{Abbrev: "TBC"}}})
 
 	// Client points to a server that would fail — proving cache is used.
-	client := &Client{httpClient: &http.Client{}, baseURL: "http://localhost:1"}
-	tracker := NewTrackerWithDeps(client, cache)
+	client := &Client{httpClient: &http.Client{}, baseURL: "http://localhost:1", locationID: 11}
+	tracker := NewTrackerWithDeps(client, cache, "VBG")
 
 	result, err := tracker.NextLaunch(context.Background())
 
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	assert.Equal(t, "Cached Launch", result.Launch.Name)
+}
+
+func TestTracker_NextLaunch_NilCache(t *testing.T) {
+	future := time.Now().Add(48 * time.Hour)
+	server := fixtureResponse(t, []apiLaunchEntry{
+		{ID: "no-cache", Name: "No Cache Launch", NET: future.Format(time.RFC3339), Status: Status{Abbrev: "Go"}},
+	})
+	defer server.Close()
+
+	client := &Client{httpClient: server.Client(), baseURL: server.URL, locationID: 11}
+	tracker := NewTrackerWithDeps(client, nil, "VBG")
+
+	result, err := tracker.NextLaunch(context.Background())
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "No Cache Launch", result.Launch.Name)
 }
 
 func TestTracker_NextLaunch_SkipsPastLaunches(t *testing.T) {
@@ -226,8 +245,8 @@ func TestTracker_NextLaunch_SkipsPastLaunches(t *testing.T) {
 	})
 	defer server.Close()
 
-	client := &Client{httpClient: server.Client(), baseURL: server.URL}
-	tracker := NewTrackerWithDeps(client, testCache(t))
+	client := &Client{httpClient: server.Client(), baseURL: server.URL, locationID: 11}
+	tracker := NewTrackerWithDeps(client, testCache(t), "VBG")
 
 	result, err := tracker.NextLaunch(context.Background())
 
@@ -240,8 +259,8 @@ func TestTracker_NextLaunch_NoUpcoming(t *testing.T) {
 	server := fixtureResponse(t, []apiLaunchEntry{})
 	defer server.Close()
 
-	client := &Client{httpClient: server.Client(), baseURL: server.URL}
-	tracker := NewTrackerWithDeps(client, testCache(t))
+	client := &Client{httpClient: server.Client(), baseURL: server.URL, locationID: 11}
+	tracker := NewTrackerWithDeps(client, testCache(t), "VBG")
 
 	result, err := tracker.NextLaunch(context.Background())
 
@@ -272,8 +291,18 @@ func TestFormatCountdown(t *testing.T) {
 
 func TestFormatStatus(t *testing.T) {
 	r := NextLaunchResult{
-		Launch:    Launch{Name: "Falcon 9 Block 5 | Starlink Group 17-17", Status: Status{Abbrev: "Go"}},
-		Countdown: "3d 4h",
+		Launch:     Launch{Name: "Falcon 9 Block 5 | Starlink Group 17-17", Status: Status{Abbrev: "Go"}},
+		Countdown:  "3d 4h",
+		SiteAbbrev: "VBG",
 	}
 	assert.Equal(t, "🚀[VBG] Falcon 9 Block 5 in 3d 4h", r.FormatStatus())
+}
+
+func TestFormatStatus_DifferentSite(t *testing.T) {
+	r := NextLaunchResult{
+		Launch:     Launch{Name: "Falcon 9 Block 5 | Starlink Group 17-17", Status: Status{Abbrev: "Go"}},
+		Countdown:  "1d 2h",
+		SiteAbbrev: "KSC",
+	}
+	assert.Equal(t, "🚀[KSC] Falcon 9 Block 5 in 1d 2h", r.FormatStatus())
 }

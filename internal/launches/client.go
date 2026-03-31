@@ -9,9 +9,8 @@ import (
 )
 
 const (
-	baseURL       = "https://ll.thespacedevs.com/2.2.0"
-	vandenbergID  = 11
-	defaultLimit  = 5
+	baseURL        = "https://ll.thespacedevs.com/2.2.0"
+	defaultLimit   = 5
 	requestTimeout = 10 * time.Second
 )
 
@@ -52,20 +51,22 @@ type apiLaunchEntry struct {
 type Client struct {
 	httpClient *http.Client
 	baseURL    string
+	locationID int
 }
 
-// NewClient creates a new API client.
-func NewClient() *Client {
+// NewClient creates a new API client for the given location ID.
+func NewClient(locationID int) *Client {
 	return &Client{
 		httpClient: &http.Client{Timeout: requestTimeout},
 		baseURL:    baseURL,
+		locationID: locationID,
 	}
 }
 
 // FetchUpcoming returns upcoming launches from Vandenberg.
 func (c *Client) FetchUpcoming(ctx context.Context) ([]Launch, error) {
 	url := fmt.Sprintf("%s/launch/upcoming/?format=json&location__ids=%d&limit=%d&mode=list",
-		c.baseURL, vandenbergID, defaultLimit)
+		c.baseURL, c.locationID, defaultLimit)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

@@ -1,38 +1,15 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"time"
 
-	"github.com/BradEwing/stellar-status/internal/launches"
-	"github.com/BradEwing/stellar-status/internal/moon"
+	"github.com/BradEwing/stellar-status/cmd"
 )
 
 func main() {
-	p := moon.Current()
-	moonStatus := fmt.Sprintf("%s %s %.0f%%", p.Emoji, p.Name, p.Illumination*100)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	tracker, err := launches.NewTracker()
-	if err != nil {
-		fmt.Printf("%s | 🚀[VBG] unavailable\n", moonStatus)
-		os.Exit(0)
+	if err := cmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
-
-	result, err := tracker.NextLaunch(ctx)
-	if err != nil {
-		fmt.Printf("%s | 🚀[VBG] unavailable\n", moonStatus)
-		os.Exit(0)
-	}
-
-	if result == nil {
-		fmt.Printf("%s | 🚀[VBG] no upcoming launches\n", moonStatus)
-		os.Exit(0)
-	}
-
-	fmt.Printf("%s | %s\n", moonStatus, result.FormatStatus())
 }
