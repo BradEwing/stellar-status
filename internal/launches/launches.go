@@ -13,13 +13,13 @@ type NextLaunchResult struct {
 	Countdown string // e.g. "3d 4h"
 }
 
-// FormatStatus returns a compact status string like "🚀[VBG] Falcon 9 in 3d 4h [Go]".
+// FormatStatus returns a compact status string like "🚀[VBG] Falcon 9 in 3d 4h".
 func (r NextLaunchResult) FormatStatus() string {
 	name := r.Launch.Name
 	if parts := strings.SplitN(name, "|", 2); len(parts) > 1 {
 		name = strings.TrimSpace(parts[0])
 	}
-	return fmt.Sprintf("🚀[VBG] %s in %s [%s]", name, r.Countdown, r.Launch.Status.Abbrev)
+	return fmt.Sprintf("🚀[VBG] %s in %s", name, r.Countdown)
 }
 
 // Tracker fetches and caches VBG launch data.

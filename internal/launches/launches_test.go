@@ -202,5 +202,5 @@ func TestFormatStatus(t *testing.T) {
 		Launch:    Launch{Name: "Falcon 9 Block 5 | Starlink Group 17-17", Status: Status{Abbrev: "Go"}},
 		Countdown: "3d 4h",
 	}
-	assert.Equal(t, "🚀[VBG] Falcon 9 Block 5 in 3d 4h [Go]", r.FormatStatus())
+	assert.Equal(t, "🚀[VBG] Falcon 9 Block 5 in 3d 4h", r.FormatStatus())
 }
