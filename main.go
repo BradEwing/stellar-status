@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/bradewing/stellar-status/internal/launches"
-	"github.com/bradewing/stellar-status/internal/moon"
+	"github.com/BradEwing/stellar-status/internal/launches"
+	"github.com/BradEwing/stellar-status/internal/moon"
 )
 
 func main() {

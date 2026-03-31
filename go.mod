@@ -1,4 +1,4 @@
-module github.com/bradewing/stellar-status
+module github.com/BradEwing/stellar-status
 
 go 1.26.1
 

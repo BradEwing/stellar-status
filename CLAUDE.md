@@ -12,8 +12,8 @@ The status line integrates with Claude Code's UI to provide contextual informati
 
 ## Development Commands
 
-- **Build**: `go build -o stellar-status ./cmd/stellar-status` (outputs binary to current dir)
-- **Run**: `go run ./cmd/stellar-status` or `./stellar-status` after building
+- **Build**: `go build -o stellar-status .` (outputs binary to current dir)
+- **Run**: `go run .` or `./stellar-status` after building
 - **Run tests**: `go test ./...` or `go test -v ./...` for verbose output (use testify/assert)
 - **Run a specific test**: `go test -run TestName ./package`
 - **Lint code**: `golangci-lint run` (if configured) or `go vet ./...`
@@ -39,10 +39,9 @@ The status line integrates with Claude Code's UI to provide contextual informati
    - Handles emoji/ASCII representation and truncation for terminal
    - Configurable output formats
 
-4. **Command Package** (`cmd/stellar-status/`)
+4. **Main Package** (root `main.go`)
    - Main entry point
    - Orchestrates packages
-   - CLI flag parsing for configuration
 
 ### Data Sources
 
