@@ -76,6 +76,79 @@ func TestClient_FetchUpcoming_BadStatus(t *testing.T) {
 	assert.Contains(t, err.Error(), "429")
 }
 
+func TestClient_FetchUpcoming_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`not json`))
+	}))
+	defer server.Close()
+
+	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	_, err := client.FetchUpcoming(context.Background())
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "decoding response")
+}
+
+func TestClient_FetchUpcoming_SkipsInvalidDates(t *testing.T) {
+	future := time.Now().Add(48 * time.Hour).Format(time.RFC3339)
+	server := fixtureResponse(t, []apiLaunchEntry{
+		{ID: "bad-date", Name: "Bad Date Launch", NET: "not-a-date", Status: Status{Abbrev: "Go"}},
+		{ID: "good", Name: "Good Launch", NET: future, Status: Status{Abbrev: "Go"}},
+	})
+	defer server.Close()
+
+	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	launches, err := client.FetchUpcoming(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, launches, 1)
+	assert.Equal(t, "Good Launch", launches[0].Name)
+}
+
+func TestClient_FetchUpcoming_CancelledContext(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	_, err := client.FetchUpcoming(ctx)
+
+	assert.Error(t, err)
+}
+
+func TestClient_FetchUpcoming_RequestParams(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "stellar-status/1.0", r.Header.Get("User-Agent"))
+		assert.Equal(t, http.MethodGet, r.Method)
+
+		q := r.URL.Query()
+		assert.Equal(t, "json", q.Get("format"))
+		assert.Equal(t, "11", q.Get("location__ids"))
+		assert.Equal(t, "5", q.Get("limit"))
+		assert.Equal(t, "list", q.Get("mode"))
+		assert.Contains(t, r.URL.Path, "/launch/upcoming/")
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(apiResponse{})
+	}))
+	defer server.Close()
+
+	client := &Client{httpClient: server.Client(), baseURL: server.URL}
+	_, err := client.FetchUpcoming(context.Background())
+	require.NoError(t, err)
+}
+
+func TestNewClient(t *testing.T) {
+	client := NewClient()
+	assert.Equal(t, baseURL, client.baseURL)
+	assert.Equal(t, requestTimeout, client.httpClient.Timeout)
+}
+
 func TestCache_GetSet(t *testing.T) {
 	cache := testCache(t)
 
