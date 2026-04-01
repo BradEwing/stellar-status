@@ -36,9 +36,14 @@ Add to `~/.claude/settings.json`:
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--cache` | `-c` | `true` | Enable file-based cache for launch API responses |
+| `--no-cache` | `-n` | `false` | Disable file-based cache for launch API responses |
 | `--site` | `-s` | `VBG` | Launch site abbreviation (see supported sites below) |
 | `--moon-ascii` | `-m` | `false` | Show 5x3 ASCII moon art (multi-line output) |
+| `--solar` | `-o` | `false` | Show sun altitude |
+| `--twilight` | `-t` | `false` | Show sunrise/sunset times |
+| `--planets` | `-p` | `false` | Show visible planets |
+| `--lat` | | `34.7420` | Observer latitude (degrees, positive north) |
+| `--lon` | | `-120.5724` | Observer longitude (degrees, positive east) |
 
 ### Examples
 
@@ -47,10 +52,13 @@ Add to `~/.claude/settings.json`:
 stellar-status
 
 # Track launches from Kennedy Space Center, no cache
-stellar-status --site KSC --cache=false
+stellar-status --site KSC --no-cache
 
 # Short flags with ASCII moon art
 stellar-status -s STARBASE -m
+
+# Show solar, twilight, and planet info for a custom location
+stellar-status -o -t -p --lat 40.7128 --lon -74.0060
 ```
 
 ### Supported Sites

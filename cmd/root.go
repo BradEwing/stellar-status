@@ -24,7 +24,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().BoolP("cache", "c", true, "enable file-based cache for launch API responses")
+	rootCmd.Flags().BoolP("no-cache", "n", false, "disable file-based cache for launch API responses")
 	rootCmd.Flags().StringP("site", "s", "VBG", "launch site abbreviation ("+strings.Join(launches.ValidSiteAbbrevs(), ", ")+")")
 	rootCmd.Flags().BoolP("moon-ascii", "m", false, "show 5x3 ASCII moon art (multi-line output)")
 	rootCmd.Flags().BoolP("solar", "o", false, "show sun altitude")
@@ -42,7 +42,7 @@ func Execute() error {
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	useCache := viper.GetBool("cache")
+	useCache := !viper.GetBool("no-cache")
 	siteAbbrev := viper.GetString("site")
 	moonASCII := viper.GetBool("moon-ascii")
 	showSolar := viper.GetBool("solar")
