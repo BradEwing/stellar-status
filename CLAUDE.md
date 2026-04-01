@@ -49,6 +49,10 @@ The status line integrates with Claude Code's UI to provide contextual informati
 - **Launch data**: External API (e.g., LaunchLibrary, RocketLauncher, or custom VBG feed)
   - Document the chosen API, authentication, and rate limits as they're determined
 
+## Code Style
+
+- Prefer no comments within a struct or function body; code should be self-explanatory
+
 ## Key Decisions
 
 - Status line is designed for clarity and at-a-glance consumption in the Claude Code UI
