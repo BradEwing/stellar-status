@@ -20,9 +20,9 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().Bool("cache", false, "enable file-based cache for launch API responses")
-	rootCmd.Flags().String("site", "VBG", "launch site abbreviation ("+strings.Join(launches.ValidSiteAbbrevs(), ", ")+")")
-	rootCmd.Flags().Bool("moon-ascii", false, "show 3x3 ASCII moon art (multi-line output)")
+	rootCmd.Flags().BoolP("cache", "c", true, "enable file-based cache for launch API responses")
+	rootCmd.Flags().StringP("site", "s", "VBG", "launch site abbreviation ("+strings.Join(launches.ValidSiteAbbrevs(), ", ")+")")
+	rootCmd.Flags().BoolP("moon-ascii", "m", false, "show 5x3 ASCII moon art (multi-line output)")
 
 	viper.BindPFlags(rootCmd.Flags())
 }
