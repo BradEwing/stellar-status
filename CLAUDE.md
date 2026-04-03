@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**stellar-status** is an opinionated Claude Code status line that displays moon phase, upcoming rocket launches, sun position, twilight times, and planet visibility. It integrates with Claude Code's UI to provide at-a-glance astronomical and launch information.
+**stellar-status** is an opinionated Claude Code status line that displays moon phase, upcoming rocket launches, sun position, twilight times, planet visibility, meteor showers, deep sky objects, aurora/Kp index, and NASA APOD. It integrates with Claude Code's UI to provide at-a-glance astronomical and launch information.
 
 ## Development Commands
 
@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### CLI Flags
 
-`--site` (launch site slug), `--lat`/`--lon` (observer coordinates), `--solar`, `--twilight`, `--planets`, `--moon-ascii`, `--no-cache`
+`--site` (launch site slug), `--lat`/`--lon` (observer coordinates), `--solar`, `--twilight`, `--planets`, `--meteors`, `--deepsky`, `--aurora`, `--apod`, `--nasa-key`, `--moon-ascii`, `--no-moon`, `--no-launch`, `--no-cache`
 
 ### Packages
 
@@ -39,6 +39,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 5. **`internal/twilight/`** — sunrise/sunset, civil/astronomical twilight, golden hour.
 
 6. **`internal/planets/`** — planet orbital elements and visibility calculations.
+
+7. **`internal/meteors/`** — meteor shower activity from embedded IMO data. Static dataset of 12 major showers with peak dates, active windows, and ZHR. No external API.
+
+8. **`internal/deepsky/`** — deep sky object visibility. Curated catalog of 15 Messier/NGC showpiece objects. Uses `internal/astro` to compute alt/az; shows highest object above 15° when sky is dark. No external API.
+
+9. **`internal/aurora/`** — aurora/geomagnetic activity via NOAA SWPC Kp index. File-based cache at `~/.cache/stellar-status/aurora.json` with 30-minute TTL. No auth required.
+
+10. **`internal/apod/`** — NASA Astronomy Picture of the Day title. File-based cache at `~/.cache/stellar-status/apod.json` with 6-hour TTL. Uses `DEMO_KEY` by default or `NASA_API_KEY` env var.
+
+### Widget Patterns
+
+**Pure computation widgets** (moon, solar, twilight, planets, meteors, deepsky) follow:
+```
+Current(loc) → Type        // uses time.Now()
+ForTime(t, loc) → Type     // parameterized for testing
+(Type) FormatStatus() string
+```
+
+**Network-dependent widgets** (launches, aurora, apod) use a `Fetch(ctx, ...) → (*Type, error)` pattern with file-based caching.
 
 ### Output Format
 

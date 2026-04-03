@@ -7,6 +7,10 @@ A [Claude Code](https://claude.ai/code) status line that shows various astro inf
 - Visible planets
 - Sun altitude
 - Sunrise/sunset times
+- Meteor shower activity
+- Deep sky object visibility
+- Aurora/geomagnetic activity (Kp index)
+- NASA Astronomy Picture of the Day
 
 ```
 🌔 Waxing Gibbous 95% | 🚀[VBG] Falcon 9 Block 5 in 2d 16h 26m
@@ -39,11 +43,22 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
+To enable additional widgets, pass flags in the command:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "stellar-status --solar --twilight --planets --meteors --deepsky --aurora --apod"
+  }
+}
+```
+
 ## Flags
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--no-cache` | `-n` | `false` | Disable file-based cache for launch API responses |
+| `--no-cache` | `-n` | `false` | Disable file-based cache for API responses |
 | `--site` | `-s` | `VBG` | Launch site abbreviation (see supported sites below) |
 | `--moon-ascii` | `-m` | `false` | Show 5x3 ASCII moon art (multi-line output) |
 | `--no-moon` | | `false` | Disable moon phase display |
@@ -51,6 +66,11 @@ Add to `~/.claude/settings.json`:
 | `--solar` | `-o` | `false` | Show sun altitude |
 | `--twilight` | `-t` | `false` | Show sunrise/sunset times |
 | `--planets` | `-p` | `false` | Show visible planets |
+| `--meteors` | `-e` | `false` | Show meteor shower activity |
+| `--deepsky` | `-d` | `false` | Show best visible deep sky object |
+| `--aurora` | `-a` | `false` | Show aurora/Kp geomagnetic index |
+| `--apod` | | `false` | Show NASA Astronomy Picture of the Day title |
+| `--nasa-key` | | | NASA API key (or set `NASA_API_KEY` env var) |
 | `--lat` | | `34.7420` | Observer latitude (degrees, positive north) |
 | `--lon` | | `-120.5724` | Observer longitude (degrees, positive east) |
 
@@ -74,8 +94,24 @@ stellar-status --no-launch
 # => 🌕 Full Moon 99%
 
 # Show all widgets
-stellar-status --solar --twilight --planets
-# => 🌕 Full Moon 99% | 🚀[VBG] Falcon 9 Block 5 in 2d 19h 59m | 🌙 -9° | 🌃 twilight til 8:47pm | 🔭 Venus Jupiter
+stellar-status --solar --twilight --planets --meteors --deepsky --aurora --apod
+# => 🌕 Full Moon 99% | 🚀[VBG] Falcon 9 in 2d 19h | ☀️ 45° | 🌅 sunset 7:42pm | 🔭 Venus Jupiter | ☄️ Perseids peak in 3d (ZHR ~100) | 🌌 M13 (Hercules Cluster) alt 68° | 🌌 Aurora possible (Kp=5) | 🔭 APOD: "Pillars of Creation"
+
+# Meteor showers only
+stellar-status --no-moon --no-launch --meteors
+# => ☄️ Geminids peak tonight (ZHR ~150)
+
+# Night sky combo: deep sky objects + planets + aurora
+stellar-status --no-moon --no-launch --deepsky --planets --aurora
+# => 🔭 Venus Jupiter Saturn | 🌌 M42 (Orion Nebula) alt 62° | ☀️ Solar quiet (Kp=2)
+
+# Aurora monitoring
+stellar-status --no-moon --no-launch --aurora
+# => 🌌 Aurora likely! (Kp=8)
+
+# APOD with custom NASA API key
+stellar-status --no-moon --no-launch --apod --nasa-key YOUR_KEY
+# => 🔭 APOD: "The Horsehead Nebula in Infrared"
 
 # Only astro widgets, no defaults
 stellar-status --no-moon --no-launch --solar --twilight --planets
@@ -112,5 +148,16 @@ stellar-status -m --no-launch
 
 - **Moon phase**: Pure Go calculation (no external API)
 - **Launch data**: [Launch Library 2 API](https://ll.thespacedevs.com) filtered by launch site
-  - Cached locally at `~/.cache/stellar-status/launches-{site}.json` (enabled by default, 10-minute TTL)
+  - Cached locally at `~/.cache/stellar-status/launches-{site}.json` (10-minute TTL)
   - 10-second HTTP timeout with graceful fallback
+- **Meteor showers**: Static dataset from IMO working list (no external API)
+  - 12 major showers with peak dates, active windows, and ZHR
+- **Deep sky objects**: Pure Go calculation using `internal/astro` (no external API)
+  - Curated catalog of 15 Messier/NGC showpiece objects
+  - Computes altitude/azimuth from observer location; shows highest object above 15° when sky is dark
+- **Aurora/Kp index**: [NOAA Space Weather Prediction Center](https://www.swpc.noaa.gov/)
+  - Cached locally at `~/.cache/stellar-status/aurora.json` (30-minute TTL)
+  - No authentication required
+- **APOD**: [NASA Astronomy Picture of the Day API](https://api.nasa.gov/)
+  - Cached locally at `~/.cache/stellar-status/apod.json` (6-hour TTL)
+  - Uses `DEMO_KEY` by default (30 req/hr); set `NASA_API_KEY` for higher limits
