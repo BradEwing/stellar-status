@@ -4,57 +4,65 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**stellar-status** is an opinionated Claude Code status line that displays:
-- Current moon phase (using [ascii-moon-phase-python](https://github.com/asweigart/ascii-moon-phase-python))
-- Upcoming rocket launches from Vandenberg Space Force Base (VBG)
-
-The status line integrates with Claude Code's UI to provide contextual information while working.
+**stellar-status** is an opinionated Claude Code status line that displays moon phase, upcoming rocket launches, sun position, twilight times, and planet visibility. It integrates with Claude Code's UI to provide at-a-glance astronomical and launch information.
 
 ## Development Commands
 
-- **Build**: `go build -o stellar-status .` (outputs binary to current dir)
+- **Build**: `go build -o stellar-status .`
 - **Run**: `go run .` or `./stellar-status` after building
-- **Run tests**: `go test ./...` or `go test -v ./...` for verbose output (use testify/assert)
+- **Run tests**: `go test ./...` or `go test -v ./...` for verbose output
 - **Run a specific test**: `go test -run TestName ./package`
-- **Lint code**: `golangci-lint run` (if configured) or `go vet ./...`
-- **Format code**: `gofmt -w .` or `go fmt ./...`
+- **Lint**: `go vet ./...`
+- **Format**: `gofmt -w .` or `go fmt ./...`
 
 ## Architecture
 
-### Core Components
+### Entry Point
 
-1. **Moon Phase Package** (`internal/moon/`)
-   - Pure Go calculation of lunar phase (no external dependencies)
-   - Returns phase percentage and ASCII representation
-   - May reference ascii-moon-phase-python for output format reference
+- `main.go` — calls `cmd.Execute()`
+- `cmd/root.go` — Cobra CLI with Viper flag binding, orchestrates all widgets
 
-2. **Launch Tracking Package** (`internal/launches/`)
-   - Fetches upcoming VBG rocket launches from external API
-   - Implements caching layer to minimize API calls
-   - Parses launch data and determines next scheduled launch
-   - May use `time.Time` and file-based or in-memory cache
+### CLI Flags
 
-3. **Formatter Package** (`internal/format/`)
-   - Combines moon phase and launch info into status string
-   - Handles emoji/ASCII representation and truncation for terminal
-   - Configurable output formats
+`--site` (launch site slug), `--lat`/`--lon` (observer coordinates), `--solar`, `--twilight`, `--planets`, `--moon-ascii`, `--no-cache`
 
-4. **Main Package** (root `main.go`)
-   - Main entry point
-   - Orchestrates packages
+### Packages
 
-### Data Sources
+1. **`internal/astro/`** — shared astronomical utilities: Julian Date, altitude/azimuth, local sidereal time, `Location` type. Based on Meeus, *Astronomical Algorithms*.
 
-- **Moon phases**: Pure Go calculation (no external dependencies)
-- **Launch data**: External API (e.g., LaunchLibrary, RocketLauncher, or custom VBG feed)
-  - Document the chosen API, authentication, and rate limits as they're determined
+2. **`internal/moon/`** — lunar phase calculation and ASCII art representation. Pure Go.
+
+3. **`internal/launches/`** — Launch Library 2 client (`https://ll.thespacedevs.com/2.2.0`). File-based cache at `~/.cache/stellar-status/launches-{site}.json` with 10-minute TTL. Supports 15 launch sites.
+
+4. **`internal/solar/`** — sun position and formatted status output.
+
+5. **`internal/twilight/`** — sunrise/sunset, civil/astronomical twilight, golden hour.
+
+6. **`internal/planets/`** — planet orbital elements and visibility calculations.
+
+### Output Format
+
+Widgets produce emoji-based status indicators joined with ` | `. Times use `"3:04pm"` in local timezone. Countdowns use smart truncation (`"3d 4h 15m"`).
+
+### Dependencies
+
+- `github.com/spf13/cobra` + `github.com/spf13/viper` — CLI framework
+- `github.com/stretchr/testify` — test assertions
+- All astronomy algorithms are pure Go
 
 ## Code Style
 
-- Prefer no comments within a struct or function body; code should be self-explanatory
+- No comments inside function or struct bodies
+- Package names: lowercase singular nouns
+- Error wrapping with `fmt.Errorf` + `%w`
 
-## Key Decisions
+## Testing
 
-- Status line is designed for clarity and at-a-glance consumption in the Claude Code UI
-- Moon phase is a visual indicator; launch info is the primary actionable data
-- Cache strategies should balance freshness with rate limiting on external APIs
+- Use `testify/assert` and `testify/require`
+- Use `httptest` for HTTP mocking
+- Write individual test functions, not table-driven tests
+
+## CI/CD
+
+- **`tag.yml`**: manual dispatch workflow, computes next semver tag, creates and pushes tag (requires `RELEASE_TOKEN`)
+- **`release.yml`**: triggered by `v*.*.*` tags, builds 5-platform matrix (linux-amd64, linux-arm64, darwin-amd64, darwin-arm64, windows-amd64), creates GitHub release, auto-updates README install version
