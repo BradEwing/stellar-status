@@ -9,6 +9,7 @@ import (
 
 	"github.com/BradEwing/stellar-status/internal/astro"
 	"github.com/BradEwing/stellar-status/internal/launches"
+	"github.com/BradEwing/stellar-status/internal/meteors"
 	"github.com/BradEwing/stellar-status/internal/moon"
 	"github.com/BradEwing/stellar-status/internal/planets"
 	"github.com/BradEwing/stellar-status/internal/solar"
@@ -32,6 +33,7 @@ func init() {
 	rootCmd.Flags().BoolP("solar", "o", false, "show sun altitude")
 	rootCmd.Flags().BoolP("twilight", "t", false, "show sunrise/sunset times")
 	rootCmd.Flags().BoolP("planets", "p", false, "show visible planets")
+	rootCmd.Flags().BoolP("meteors", "e", false, "show meteor shower info")
 	rootCmd.Flags().Float64("lat", 34.7420, "observer latitude (degrees, positive north)")
 	rootCmd.Flags().Float64("lon", -120.5724, "observer longitude (degrees, positive east)")
 
@@ -52,6 +54,7 @@ func run(cmd *cobra.Command, args []string) error {
 	showSolar := viper.GetBool("solar")
 	showTwilight := viper.GetBool("twilight")
 	showPlanets := viper.GetBool("planets")
+	showMeteors := viper.GetBool("meteors")
 	loc := astro.Location{
 		Latitude:  viper.GetFloat64("lat"),
 		Longitude: viper.GetFloat64("lon"),
@@ -93,6 +96,12 @@ func run(cmd *cobra.Command, args []string) error {
 
 	if showPlanets {
 		segments = append(segments, planets.Current(loc).FormatStatus())
+	}
+
+	if showMeteors {
+		if s := meteors.Current(loc).FormatStatus(); s != "" {
+			segments = append(segments, s)
+		}
 	}
 
 	var p moon.Phase
