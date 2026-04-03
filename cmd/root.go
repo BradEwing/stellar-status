@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/BradEwing/stellar-status/internal/astro"
+	"github.com/BradEwing/stellar-status/internal/aurora"
 	"github.com/BradEwing/stellar-status/internal/deepsky"
 	"github.com/BradEwing/stellar-status/internal/launches"
 	"github.com/BradEwing/stellar-status/internal/meteors"
@@ -36,6 +37,7 @@ func init() {
 	rootCmd.Flags().BoolP("planets", "p", false, "show visible planets")
 	rootCmd.Flags().BoolP("meteors", "e", false, "show meteor shower info")
 	rootCmd.Flags().BoolP("deepsky", "d", false, "show best visible deep sky object")
+	rootCmd.Flags().BoolP("aurora", "a", false, "show aurora/Kp index")
 	rootCmd.Flags().Float64("lat", 34.7420, "observer latitude (degrees, positive north)")
 	rootCmd.Flags().Float64("lon", -120.5724, "observer longitude (degrees, positive east)")
 
@@ -58,6 +60,7 @@ func run(cmd *cobra.Command, args []string) error {
 	showPlanets := viper.GetBool("planets")
 	showMeteors := viper.GetBool("meteors")
 	showDeepSky := viper.GetBool("deepsky")
+	showAurora := viper.GetBool("aurora")
 	loc := astro.Location{
 		Latitude:  viper.GetFloat64("lat"),
 		Longitude: viper.GetFloat64("lon"),
@@ -65,14 +68,14 @@ func run(cmd *cobra.Command, args []string) error {
 
 	var segments []string
 
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
 	if showLaunch {
 		site, err := launches.LookupSite(siteAbbrev)
 		if err != nil {
 			return fmt.Errorf("invalid site: %w\nValid sites: %s", err, strings.Join(launches.ValidSiteAbbrevs(), ", "))
 		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
 
 		tracker, err := launches.NewTracker(site.Abbrev, site.LocationID, useCache)
 		if err != nil {
@@ -110,6 +113,13 @@ func run(cmd *cobra.Command, args []string) error {
 	if showDeepSky {
 		if s := deepsky.Current(loc).FormatStatus(); s != "" {
 			segments = append(segments, s)
+		}
+	}
+
+	if showAurora {
+		auroraStatus, err := aurora.Fetch(ctx, useCache)
+		if err == nil && auroraStatus != nil {
+			segments = append(segments, auroraStatus.FormatStatus())
 		}
 	}
 
