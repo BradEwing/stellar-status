@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/BradEwing/stellar-status/internal/astro"
+	"github.com/BradEwing/stellar-status/internal/deepsky"
 	"github.com/BradEwing/stellar-status/internal/launches"
 	"github.com/BradEwing/stellar-status/internal/meteors"
 	"github.com/BradEwing/stellar-status/internal/moon"
@@ -34,6 +35,7 @@ func init() {
 	rootCmd.Flags().BoolP("twilight", "t", false, "show sunrise/sunset times")
 	rootCmd.Flags().BoolP("planets", "p", false, "show visible planets")
 	rootCmd.Flags().BoolP("meteors", "e", false, "show meteor shower info")
+	rootCmd.Flags().BoolP("deepsky", "d", false, "show best visible deep sky object")
 	rootCmd.Flags().Float64("lat", 34.7420, "observer latitude (degrees, positive north)")
 	rootCmd.Flags().Float64("lon", -120.5724, "observer longitude (degrees, positive east)")
 
@@ -55,6 +57,7 @@ func run(cmd *cobra.Command, args []string) error {
 	showTwilight := viper.GetBool("twilight")
 	showPlanets := viper.GetBool("planets")
 	showMeteors := viper.GetBool("meteors")
+	showDeepSky := viper.GetBool("deepsky")
 	loc := astro.Location{
 		Latitude:  viper.GetFloat64("lat"),
 		Longitude: viper.GetFloat64("lon"),
@@ -100,6 +103,12 @@ func run(cmd *cobra.Command, args []string) error {
 
 	if showMeteors {
 		if s := meteors.Current(loc).FormatStatus(); s != "" {
+			segments = append(segments, s)
+		}
+	}
+
+	if showDeepSky {
+		if s := deepsky.Current(loc).FormatStatus(); s != "" {
 			segments = append(segments, s)
 		}
 	}
