@@ -1,9 +1,12 @@
 # 🌌 stellar-status
 
-An opinionated [Claude Code](https://claude.ai/code) status line that shows:
+A[Claude Code](https://claude.ai/code) status line that shows various astro information, such as:
 
-- Current moon phase with emoji and illumination percentage
-- Next upcoming rocket launch from your chosen launch site
+- Current moon phase with emoji and illumination percentage [default]
+- Next upcoming rocket launch from your chosen launch site [default]
+- Visible planets
+- Sun altitude
+- Sunrise/sunset times
 
 ```
 🌔 Waxing Gibbous 95% | 🚀[VBG] Falcon 9 Block 5 in 2d 16h 26m
