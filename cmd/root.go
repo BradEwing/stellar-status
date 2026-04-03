@@ -27,6 +27,8 @@ func init() {
 	rootCmd.Flags().BoolP("no-cache", "n", false, "disable file-based cache for launch API responses")
 	rootCmd.Flags().StringP("site", "s", "VBG", "launch site abbreviation ("+strings.Join(launches.ValidSiteAbbrevs(), ", ")+")")
 	rootCmd.Flags().BoolP("moon-ascii", "m", false, "show 5x3 ASCII moon art (multi-line output)")
+	rootCmd.Flags().Bool("no-moon", false, "disable moon phase display")
+	rootCmd.Flags().Bool("no-launch", false, "disable launch tracking")
 	rootCmd.Flags().BoolP("solar", "o", false, "show sun altitude")
 	rootCmd.Flags().BoolP("twilight", "t", false, "show sunrise/sunset times")
 	rootCmd.Flags().BoolP("planets", "p", false, "show visible planets")
@@ -45,6 +47,8 @@ func run(cmd *cobra.Command, args []string) error {
 	useCache := !viper.GetBool("no-cache")
 	siteAbbrev := viper.GetString("site")
 	moonASCII := viper.GetBool("moon-ascii")
+	showMoon := !viper.GetBool("no-moon")
+	showLaunch := !viper.GetBool("no-launch")
 	showSolar := viper.GetBool("solar")
 	showTwilight := viper.GetBool("twilight")
 	showPlanets := viper.GetBool("planets")
@@ -53,29 +57,29 @@ func run(cmd *cobra.Command, args []string) error {
 		Longitude: viper.GetFloat64("lon"),
 	}
 
-	site, err := launches.LookupSite(siteAbbrev)
-	if err != nil {
-		return fmt.Errorf("invalid site: %w\nValid sites: %s", err, strings.Join(launches.ValidSiteAbbrevs(), ", "))
-	}
-
-	p := moon.Current()
-
 	var segments []string
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
+	if showLaunch {
+		site, err := launches.LookupSite(siteAbbrev)
+		if err != nil {
+			return fmt.Errorf("invalid site: %w\nValid sites: %s", err, strings.Join(launches.ValidSiteAbbrevs(), ", "))
+		}
 
-	tracker, err := launches.NewTracker(site.Abbrev, site.LocationID, useCache)
-	if err != nil {
-		segments = append(segments, fmt.Sprintf("🚀[%s] unavailable", site.Abbrev))
-	} else {
-		result, err := tracker.NextLaunch(ctx)
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		tracker, err := launches.NewTracker(site.Abbrev, site.LocationID, useCache)
 		if err != nil {
 			segments = append(segments, fmt.Sprintf("🚀[%s] unavailable", site.Abbrev))
-		} else if result == nil {
-			segments = append(segments, fmt.Sprintf("🚀[%s] no upcoming launches", site.Abbrev))
 		} else {
-			segments = append(segments, result.FormatStatus())
+			result, err := tracker.NextLaunch(ctx)
+			if err != nil {
+				segments = append(segments, fmt.Sprintf("🚀[%s] unavailable", site.Abbrev))
+			} else if result == nil {
+				segments = append(segments, fmt.Sprintf("🚀[%s] no upcoming launches", site.Abbrev))
+			} else {
+				segments = append(segments, result.FormatStatus())
+			}
 		}
 	}
 
@@ -91,20 +95,37 @@ func run(cmd *cobra.Command, args []string) error {
 		segments = append(segments, planets.Current(loc).FormatStatus())
 	}
 
-	printOutput(p, moonASCII, segments)
+	var p moon.Phase
+	if showMoon {
+		p = moon.Current()
+	}
+
+	printOutput(p, showMoon, moonASCII, segments)
 	return nil
 }
 
-func printOutput(p moon.Phase, ascii bool, segments []string) {
+func printOutput(p moon.Phase, showMoon, ascii bool, segments []string) {
 	status := strings.Join(segments, " | ")
+	if !showMoon {
+		fmt.Fprintln(os.Stdout, status)
+		return
+	}
 	if ascii {
 		art := p.ASCII()
 		moonInfo := fmt.Sprintf("%s %.0f%%", p.Name, p.Illumination*100)
 		fmt.Fprintln(os.Stdout, art[0])
-		fmt.Fprintf(os.Stdout, "%s %s | %s\n", art[1], moonInfo, status)
+		if status != "" {
+			fmt.Fprintf(os.Stdout, "%s %s | %s\n", art[1], moonInfo, status)
+		} else {
+			fmt.Fprintf(os.Stdout, "%s %s\n", art[1], moonInfo)
+		}
 		fmt.Fprintln(os.Stdout, art[2])
 	} else {
 		moonStatus := fmt.Sprintf("%s %s %.0f%%", p.Emoji, p.Name, p.Illumination*100)
-		fmt.Fprintf(os.Stdout, "%s | %s\n", moonStatus, status)
+		if status != "" {
+			fmt.Fprintf(os.Stdout, "%s | %s\n", moonStatus, status)
+		} else {
+			fmt.Fprintln(os.Stdout, moonStatus)
+		}
 	}
 }

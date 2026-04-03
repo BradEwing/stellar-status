@@ -39,6 +39,8 @@ Add to `~/.claude/settings.json`:
 | `--no-cache` | `-n` | `false` | Disable file-based cache for launch API responses |
 | `--site` | `-s` | `VBG` | Launch site abbreviation (see supported sites below) |
 | `--moon-ascii` | `-m` | `false` | Show 5x3 ASCII moon art (multi-line output) |
+| `--no-moon` | | `false` | Disable moon phase display |
+| `--no-launch` | | `false` | Disable launch tracking |
 | `--solar` | `-o` | `false` | Show sun altitude |
 | `--twilight` | `-t` | `false` | Show sunrise/sunset times |
 | `--planets` | `-p` | `false` | Show visible planets |
@@ -50,15 +52,33 @@ Add to `~/.claude/settings.json`:
 ```bash
 # Use defaults (cache enabled, Vandenberg SFB)
 stellar-status
+# => 🌕 Full Moon 99% | 🚀[VBG] Falcon 9 Block 5 in 2d 19h 59m
 
 # Track launches from Kennedy Space Center, no cache
 stellar-status --site KSC --no-cache
+# => 🌕 Full Moon 99% | 🚀[KSC] Falcon Heavy in 26d 20h 56m
 
-# Short flags with ASCII moon art
-stellar-status -s STARBASE -m
+# Launches only (no moon)
+stellar-status --no-moon
+# => 🚀[VBG] Falcon 9 Block 5 in 2d 19h 59m
 
-# Show solar, twilight, and planet info for a custom location
-stellar-status -o -t -p --lat 40.7128 --lon -74.0060
+# Moon only (no launches)
+stellar-status --no-launch
+# => 🌕 Full Moon 99%
+
+# Show all widgets
+stellar-status --solar --twilight --planets
+# => 🌕 Full Moon 99% | 🚀[VBG] Falcon 9 Block 5 in 2d 19h 59m | 🌙 -9° | 🌃 twilight til 8:47pm | 🔭 Venus Jupiter
+
+# Only astro widgets, no defaults
+stellar-status --no-moon --no-launch --solar --twilight --planets
+# => 🌙 -9° | 🌃 twilight til 8:47pm | 🔭 Venus Jupiter
+
+# ASCII moon art
+stellar-status -m --no-launch
+# =>  ***
+#    ***** Full Moon 99%
+#     ***
 ```
 
 ### Supported Sites
