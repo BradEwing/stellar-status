@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BradEwing/stellar-status/internal/apod"
 	"github.com/BradEwing/stellar-status/internal/astro"
 	"github.com/BradEwing/stellar-status/internal/aurora"
 	"github.com/BradEwing/stellar-status/internal/deepsky"
@@ -38,6 +39,8 @@ func init() {
 	rootCmd.Flags().BoolP("meteors", "e", false, "show meteor shower info")
 	rootCmd.Flags().BoolP("deepsky", "d", false, "show best visible deep sky object")
 	rootCmd.Flags().BoolP("aurora", "a", false, "show aurora/Kp index")
+	rootCmd.Flags().Bool("apod", false, "show NASA Astronomy Picture of the Day title")
+	rootCmd.Flags().String("nasa-key", "", "NASA API key (or set NASA_API_KEY env var)")
 	rootCmd.Flags().Float64("lat", 34.7420, "observer latitude (degrees, positive north)")
 	rootCmd.Flags().Float64("lon", -120.5724, "observer longitude (degrees, positive east)")
 
@@ -120,6 +123,22 @@ func run(cmd *cobra.Command, args []string) error {
 		auroraStatus, err := aurora.Fetch(ctx, useCache)
 		if err == nil && auroraStatus != nil {
 			segments = append(segments, auroraStatus.FormatStatus())
+		}
+	}
+
+	if viper.GetBool("apod") {
+		nasaKey := viper.GetString("nasa-key")
+		if nasaKey == "" {
+			nasaKey = os.Getenv("NASA_API_KEY")
+		}
+		if nasaKey == "" {
+			nasaKey = "DEMO_KEY"
+		}
+		apodResult, err := apod.Fetch(ctx, nasaKey, useCache)
+		if err == nil && apodResult != nil {
+			if s := apodResult.FormatStatus(); s != "" {
+				segments = append(segments, s)
+			}
 		}
 	}
 
