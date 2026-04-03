@@ -11,6 +11,10 @@ An opinionated [Claude Code](https://claude.ai/code) status line that shows:
 
 ## Installation
 
+### Pre-built binary
+
+Download the latest binary for your platform from the [Releases](https://github.com/BradEwing/stellar-status/releases) page.
+
 ### Using `go install`
 
 Requires Go 1.26.1+.
