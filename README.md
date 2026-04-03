@@ -16,7 +16,7 @@ An opinionated [Claude Code](https://claude.ai/code) status line that shows:
 Requires Go 1.26.1+.
 
 ```bash
-go install github.com/BradEwing/stellar-status@latest
+go install github.com/BradEwing/stellar-status@v1.0.2
 ```
 
 ## Claude Code Statusline Setup
