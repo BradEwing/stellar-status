@@ -27,7 +27,7 @@ Download the latest binary for your platform from the [Releases](https://github.
 Requires Go 1.26.1+.
 
 ```bash
-go install github.com/BradEwing/stellar-status@v1.0.3
+go install github.com/BradEwing/stellar-status@v1.1.0
 ```
 
 ## Claude Code Statusline Setup
