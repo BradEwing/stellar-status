@@ -1,6 +1,6 @@
 # 🌌 stellar-status
 
-A[Claude Code](https://claude.ai/code) status line that shows various astro information, such as:
+A [Claude Code](https://claude.ai/code) status line that shows various astro information, such as:
 
 - Current moon phase with emoji and illumination percentage [default]
 - Next upcoming rocket launch from your chosen launch site [default]
