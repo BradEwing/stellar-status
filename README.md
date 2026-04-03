@@ -19,7 +19,7 @@ A [Claude Code](https://claude.ai/code) status line that shows various astro inf
 Requires Go 1.26.1+.
 
 ```bash
-go install github.com/BradEwing/stellar-status@v1.0.2
+go install github.com/BradEwing/stellar-status@v1.0.3
 ```
 
 ## Claude Code Statusline Setup
